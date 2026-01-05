@@ -8,10 +8,11 @@ app.config.from_object(Config)
 db.init_app(app)
 migrate.init_app(app, db)
 
+
 @app.get("/heroes")
 def get_heroes():
-    heroes = Hero.query.all()
-    return jsonify([h.to_dict() for h in heroes]), 200
+    return jsonify([h.to_dict() for h in Hero.query.all()]), 200
+
 
 @app.get("/heroes/<int:id>")
 def get_hero(id):
@@ -34,9 +35,11 @@ def get_hero(id):
         ]
     }), 200
 
+
 @app.get("/powers")
 def get_powers():
     return jsonify([p.to_dict() for p in Power.query.all()]), 200
+
 
 @app.get("/powers/<int:id>")
 def get_power(id):
@@ -45,6 +48,7 @@ def get_power(id):
         return jsonify({"error": "Power not found"}), 404
     return jsonify(power.to_dict()), 200
 
+
 @app.patch("/powers/<int:id>")
 def update_power(id):
     power = Power.query.get(id)
@@ -52,12 +56,13 @@ def update_power(id):
         return jsonify({"error": "Power not found"}), 404
 
     try:
-        power.description = request.json.get("description")
+        power.description = request.json["description"]
         db.session.commit()
         return jsonify(power.to_dict()), 200
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({"errors": [str(e)]}), 422
+        return jsonify({"errors": ["validation errors"]}), 422
+
 
 @app.post("/hero_powers")
 def create_hero_power():
@@ -79,9 +84,10 @@ def create_hero_power():
             "power": hp.power.to_dict()
         }), 201
 
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        return jsonify({"errors": [str(e)]}), 422
+        return jsonify({"errors": ["validation errors"]}), 422
+
 
 if __name__ == "__main__":
     app.run(debug=True)
