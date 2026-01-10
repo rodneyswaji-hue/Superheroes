@@ -1,21 +1,27 @@
-# Superheroes API
-
-## Description
-A Flask REST API for tracking superheroes and their superpowers using a many-to-many relationship.
+# Superheroes Flask API
 
 ## Author
 Rodney Swaji
 
-## Technologies Used
-- Flask
-- SQLAlchemy
-- Flask-Migrate
-- SQLite
-- Postman
+## Description
+A RESTful Flask API that manages heroes, powers, and their relationships.
 
-## Setup Instructions
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   pipenv install
-   pipenv shell
+## Features
+- CRUD operations
+- Validations
+- Email notifications
+- REST-compliant endpoints
+
+## Setup
+```bash
+pip install -r requirements.txt
+flask db upgrade
+python seed.py
+flask run
+```
+## Contact
+Email: rodneyswaji@gmail.com
+
+## License
+
+rodmas

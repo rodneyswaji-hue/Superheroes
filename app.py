@@ -1,29 +1,25 @@
-from flask import Flask, jsonify, request
-from config import Config, db, migrate
+from flask import request, jsonify
+from config import create_app, db
 from models import Hero, Power, HeroPower
+from flask_mail import Message, Mail
 
-app = Flask(__name__)
-app.config.from_object(Config)
+app = create_app()
+mail = Mail(app)
 
-db.init_app(app)
-migrate.init_app(app, db)
+# ---------------- GET HEROES ----------------
+@app.route("/heroes")
+def heroes():
+    return jsonify([hero.to_dict() for hero in Hero.query.all()]), 200
 
-
-@app.get("/heroes")
-def get_heroes():
-    return jsonify([h.to_dict() for h in Hero.query.all()]), 200
-
-
-@app.get("/heroes/<int:id>")
-def get_hero(id):
+# ---------------- GET HERO BY ID ----------------
+@app.route("/heroes/<int:id>")
+def hero_by_id(id):
     hero = Hero.query.get(id)
     if not hero:
-        return jsonify({"error": "Hero not found"}), 404
+        return {"error": "Hero not found"}, 404
 
-    return jsonify({
-        "id": hero.id,
-        "name": hero.name,
-        "super_name": hero.super_name,
+    return {
+        **hero.to_dict(),
         "hero_powers": [
             {
                 "id": hp.id,
@@ -33,38 +29,37 @@ def get_hero(id):
                 "power": hp.power.to_dict()
             } for hp in hero.hero_powers
         ]
-    }), 200
+    }, 200
 
-
-@app.get("/powers")
-def get_powers():
+# ---------------- GET POWERS ----------------
+@app.route("/powers")
+def powers():
     return jsonify([p.to_dict() for p in Power.query.all()]), 200
 
-
-@app.get("/powers/<int:id>")
-def get_power(id):
+# ---------------- GET POWER BY ID ----------------
+@app.route("/powers/<int:id>")
+def power_by_id(id):
     power = Power.query.get(id)
     if not power:
-        return jsonify({"error": "Power not found"}), 404
-    return jsonify(power.to_dict()), 200
+        return {"error": "Power not found"}, 404
+    return power.to_dict(), 200
 
-
-@app.patch("/powers/<int:id>")
+# ---------------- PATCH POWER ----------------
+@app.route("/powers/<int:id>", methods=["PATCH"])
 def update_power(id):
     power = Power.query.get(id)
     if not power:
-        return jsonify({"error": "Power not found"}), 404
+        return {"error": "Power not found"}, 404
 
     try:
-        power.description = request.json["description"]
+        power.description = request.json.get("description")
         db.session.commit()
-        return jsonify(power.to_dict()), 200
-    except Exception:
-        db.session.rollback()
-        return jsonify({"errors": ["validation errors"]}), 422
+        return power.to_dict(), 200
+    except Exception as e:
+        return {"errors": [str(e)]}, 422
 
-
-@app.post("/hero_powers")
+# ---------------- POST HERO POWER ----------------
+@app.route("/hero_powers", methods=["POST"])
 def create_hero_power():
     try:
         hp = HeroPower(
@@ -75,19 +70,25 @@ def create_hero_power():
         db.session.add(hp)
         db.session.commit()
 
-        return jsonify({
+        return {
             "id": hp.id,
             "hero_id": hp.hero_id,
             "power_id": hp.power_id,
             "strength": hp.strength,
             "hero": hp.hero.to_dict(),
             "power": hp.power.to_dict()
-        }), 201
+        }, 201
 
-    except Exception:
-        db.session.rollback()
-        return jsonify({"errors": ["validation errors"]}), 422
+    except Exception as e:
+        return {"errors": [str(e)]}, 422
 
-
-if __name__ == "__main__":
-    app.run(debug=True)
+@app.route("/send-email")
+def send_email():
+    msg = Message(
+        subject="Superheroes API",
+        sender="rodneyswaji@gmail.com",
+        recipients=["recipient@email.com"],
+        body="Your Flask API is working!"
+    )
+    mail.send(msg)
+    return {"message": "Email sent successfully"}, 200
